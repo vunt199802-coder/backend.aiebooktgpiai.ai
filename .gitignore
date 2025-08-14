@@ -1,108 +1,49 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
+.idea
 .ipynb_checkpoints
-
-# pyenv
-.python-version
-pyvenv.cfg
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
+.mypy_cache
+.vscode
+__pycache__
+.pytest_cache
+htmlcov
+dist
+site
+.coverage
+coverage.xml
+.netlify
+test.db
+log.txt
+Pipfile.lock
+env3.*
 .env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+docs_build
+site_build
+venv
+docs.zip
+archive.zip
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# temp files
+/files
 
-# Rope project settings
-.ropeproject
+# console
+nohup.out
 
-# mkdocs documentation
-/site
+# vim temporary files
+*~
+.*.sw?
+.cache
 
-# mypy
-.mypy_cache/
-
-# Mac OS
+# macOS
 .DS_Store
+
+# Pinecone
+.pinecone
+
+# logs
+logs/
+
+.streamlit/
+id_and_tag/.env.id
+id_and_tag/requirements.txt
+id_and_tag/streamlit_app.py
+id_and_tag/streamlit_test_prompt.py
+load_test.py
