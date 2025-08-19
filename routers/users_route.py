@@ -41,58 +41,74 @@ def route_get_user_by_id(
     return get_user_by_id(user_id, db)
 
 @router.get("/by_ic/{ic_number}", summary="Get user by IC number")
-def route_get_user_by_ic_number(ic_number: str = Path(..., description="IC number")):
+def route_get_user_by_ic_number(
+    ic_number: str = Path(..., description="IC number"),
+    db: Session = Depends(get_db_session)
+):
     """Get a single user by their IC number"""
-    return get_user_by_ic_number(ic_number)
+    return get_user_by_ic_number(ic_number, db)
 
 @router.get("/by_school_name/{school_name}", summary="Get users by school name")
 def route_get_users_by_school_name(
     school_name: str = Path(..., description="School name to filter by"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items per page")
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    db: Session = Depends(get_db_session)
 ):
     """Get users filtered by school name"""
-    return get_users_by_school_name(school_name, page, limit)
+    return get_users_by_school_name(school_name, db, page, limit)
 
 @router.get("/by_status/{status}", summary="Get users by registration status")
 def route_get_users_by_registration_status(
     status: str = Path(..., description="Registration status to filter by"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items per page")
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    db: Session = Depends(get_db_session)
 ):
     """Get users filtered by registration status"""
-    return get_users_by_registration_status(status, page, limit)
+    return get_users_by_registration_status(status, db, page, limit)
 
 @router.post("/", summary="Add a new user")
-def route_add_user(user_data: dict = Body(..., description="User data (ic_number, name, school, etc.)")):
+def route_add_user(
+    user_data: dict = Body(..., description="User data (ic_number, name, school, etc.)"),
+    db: Session = Depends(get_db_session)
+):
     """Add a new user to the database"""
-    return add_user(user_data)
+    return add_user(user_data, db)
 
 @router.patch("/{user_id}", summary="Update user information")
 def route_update_user(
     user_id: str = Path(..., description="User ID"),
-    user_data: dict = Body(..., description="Updated user data")
+    user_data: dict = Body(..., description="Updated user data"),
+    db: Session = Depends(get_db_session)
 ):
     """Update an existing user's information"""
-    return update_user(user_id, user_data)
+    return update_user(user_id, user_data, db)
 
 @router.delete("/{user_id}", summary="Delete one user")
-def route_delete_user(user_id: str = Path(..., description="User ID")):
+def route_delete_user(
+    user_id: str = Path(..., description="User ID"),
+    db: Session = Depends(get_db_session)
+):
     """Delete a single user by ID"""
-    return delete_user(user_id)
+    return delete_user(user_id, db)
 
 @router.delete("/bulk", summary="Delete multiple users")
-def route_delete_bulk_users(user_ids: list = Body(..., description="List of user IDs to delete")):
+def route_delete_bulk_users(
+    user_ids: list = Body(..., description="List of user IDs to delete"),
+    db: Session = Depends(get_db_session)
+):
     """Delete multiple users by their IDs"""
-    return delete_bulk_users(user_ids)
+    return delete_bulk_users(user_ids, db)
 
 @router.get("/with_school_id", summary="Get all users with school_id")
 def route_get_users_with_school_id(
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items per page")
+    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    db: Session = Depends(get_db_session)
 ):
     """Get all users with school_id filled based on their school name"""
-    return get_users_with_school_id(page, limit)
+    return get_users_with_school_id(db, page, limit)
 
 @router.get("/{user_id}/statistics", summary="Get user reading statistics")
 def route_get_user_statistics(

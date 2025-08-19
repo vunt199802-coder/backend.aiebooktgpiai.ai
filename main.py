@@ -20,6 +20,7 @@ from routers.users import users, progress_and_rewards_routes
 from routers.books import books, quiz_routes, highlights
 from routers.analysis import analysis
 from routers import auth
+from routers import user_auth
 from routers import admins_route
 from routers import books_route
 from routers import schools_route
@@ -50,6 +51,7 @@ app.include_router(quiz_routes.router)
 app.include_router(progress_and_rewards_routes.router)
 app.include_router(analysis.router)
 app.include_router(auth.router)
+app.include_router(user_auth.router)
 app.include_router(admins_route.router)
 app.include_router(books_route.router)
 app.include_router(schools_route.router)
