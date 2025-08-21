@@ -1,4 +1,4 @@
-from fastapi import Request, Response, Depends, HTTPException, status
+from fastapi import Request, Response, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from dependencies import get_db_session
@@ -90,7 +90,7 @@ async def user_signup_controller(
 ):
     """User signup endpoint"""
     try:
-        result = user_signup(signup_data, db)
+        result = await user_signup(signup_data, db)
         
         if result["success"]:
             return JSONResponse(
@@ -120,7 +120,7 @@ async def user_forgot_password_controller(
 ):
     """Forgot password endpoint"""
     try:
-        result = forgot_password(forgot_data, db)
+        result = await forgot_password(forgot_data, db)
         
         if result["success"]:
             return JSONResponse(
@@ -150,7 +150,7 @@ async def user_reset_password_controller(
 ):
     """Reset password endpoint"""
     try:
-        result = reset_password(reset_data, db)
+        result = await reset_password(reset_data, db)
         
         if result["success"]:
             return JSONResponse(

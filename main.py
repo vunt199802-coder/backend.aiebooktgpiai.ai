@@ -15,17 +15,16 @@ except:
 # Import routers
 from routers import langchain
 from routers import audio
-# from routers import ebooks
 from routers.users import users, progress_and_rewards_routes
 from routers.books import books, quiz_routes, highlights
 from routers.analysis import analysis
-from routers import auth
 from routers import user_auth
 from routers import admins_route
 from routers import books_route
 from routers import schools_route
 from routers import users_route
 from routers import analytics_route
+
 
 app = FastAPI()
 
@@ -43,20 +42,19 @@ app.add_middleware(
 # Add routers to app
 app.include_router(langchain.router)
 app.include_router(audio.router)
-# app.include_router(ebooks.router)
 app.include_router(users.router)
 app.include_router(highlights.router)
 app.include_router(books.router)
 app.include_router(quiz_routes.router)
 app.include_router(progress_and_rewards_routes.router)
 app.include_router(analysis.router)
-app.include_router(auth.router)
 app.include_router(user_auth.router)
 app.include_router(admins_route.router)
 app.include_router(books_route.router)
 app.include_router(schools_route.router)
 app.include_router(users_route.router)
 app.include_router(analytics_route.router)
+
 
 app.mount('/static', StaticFiles(directory='./static'), name='static')
 

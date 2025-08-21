@@ -8,26 +8,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from database.models import User
 from schemas.models import UserLoginRequest, UserGoogleLoginRequest, UserSignupRequest, ForgotPasswordRequest, ResetPasswordRequest
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from services.brevo_service import BrevoEmailService
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
-# Email Configuration
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@yourapp.com")
-
-# In-memory storage for reset tokens (in production, use Redis or database)
 reset_tokens = {}
 
 def hash_password(password: str) -> str:
@@ -61,39 +52,10 @@ def verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         logger.error("Invalid JWT token")
         return None
 
-def send_reset_email(email: str, reset_token: str) -> bool:
-    """Send password reset email"""
+async def send_reset_email(email: str, reset_token: str, user_name: str = None) -> bool:
+    """Send password reset email using Brevo API"""
     try:
-        msg = MIMEMultipart()
-        msg['From'] = FROM_EMAIL
-        msg['To'] = email
-        msg['Subject'] = "Password Reset Request"
-        
-        body = f"""
-        Hello,
-        
-        You have requested to reset your password. Please use the following token to reset your password:
-        
-        Token: {reset_token}
-        
-        This token will expire in 1 hour.
-        
-        If you did not request this password reset, please ignore this email.
-        
-        Best regards,
-        Your App Team
-        """
-        
-        msg.attach(MIMEText(body, 'plain'))
-        
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USERNAME, SMTP_PASSWORD)
-        text = msg.as_string()
-        server.sendmail(FROM_EMAIL, email, text)
-        server.quit()
-        
-        return True
+        return await BrevoEmailService.send_password_reset_email(email, reset_token, user_name)
     except Exception as e:
         logger.error(f"Failed to send reset email: {e}")
         return False
@@ -109,27 +71,27 @@ def user_login(login_data: UserLoginRequest, db: Session) -> Dict[str, Any]:
         if not user:
             return {
                 "success": False,
-                "message": "User not found"
+                "message": "Invalid email/IC number or password. Please check your credentials and try again."
             }
         
         if not user.password_hash:
             return {
                 "success": False,
-                "message": "Invalid credentials"
+                "message": "Invalid email/IC number or password. Please check your credentials and try again."
             }
         
         # Verify password
         if not verify_password(login_data.password, user.password_hash):
             return {
                 "success": False,
-                "message": "Invalid credentials"
+                "message": "Invalid email/IC number or password. Please check your credentials and try again."
             }
         
         # Check if user is active
         if user.registration_status != 'active':
             return {
                 "success": False,
-                "message": "Account is not active. Please contact administrator."
+                "message": "Your account is not active. Please contact administrator to activate your account."
             }
         
         # Create JWT token
@@ -166,7 +128,7 @@ def user_login(login_data: UserLoginRequest, db: Session) -> Dict[str, Any]:
         db.rollback()
         return {
             "success": False,
-            "message": "Internal server error"
+            "message": "An error occurred during login. Please try again later."
         }
 
 def user_google_login(login_data: UserGoogleLoginRequest, db: Session) -> Dict[str, Any]:
@@ -180,14 +142,14 @@ def user_google_login(login_data: UserGoogleLoginRequest, db: Session) -> Dict[s
         if not user:
             return {
                 "success": False,
-                "message": "User not found"
+                "message": "No account found with this email address. Please sign up first."
             }
         
         # Check if user is active
         if user.registration_status != 'active':
             return {
                 "success": False,
-                "message": "Account is not active. Please contact administrator."
+                "message": "Your account is not active. Please contact administrator to activate your account."
             }
         
         # Create JWT token
@@ -224,11 +186,11 @@ def user_google_login(login_data: UserGoogleLoginRequest, db: Session) -> Dict[s
         db.rollback()
         return {
             "success": False,
-            "message": "Internal server error"
+            "message": "An error occurred during login. Please try again later."
         }
 
 
-def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, Any]:
+async def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, Any]:
     """User signup with validation for existing ic_number"""
     try:
         # Check if user with ic_number already exists
@@ -237,14 +199,14 @@ def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, Any]:
         if not existing_user:
             return {
                 "success": False,
-                "message": "User with this IC number does not exist in the system. Please contact administrator."
+                "message": "User with this IC number does not exist in the system. Please contact administrator to add your IC number to the system."
             }
         
         # Check if user already has an account
         if existing_user.email or existing_user.password_hash:
             return {
                 "success": False,
-                "message": "User with this IC number already has an account"
+                "message": "An account with this IC number already exists. Please try logging in instead."
             }
         
         # Check if email is already taken
@@ -252,7 +214,7 @@ def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, Any]:
         if email_exists:
             return {
                 "success": False,
-                "message": "Email already registered"
+                "message": "This email address is already registered. Please use a different email or try logging in."
             }
         
         # Hash password
@@ -270,9 +232,15 @@ def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, Any]:
         # Create JWT token
         token = create_jwt_token(str(existing_user.id), existing_user.email)
         
+        # Send welcome email (async, but don't wait for it to complete)
+        try:
+            await BrevoEmailService.send_welcome_email(existing_user.email, existing_user.name)
+        except Exception as e:
+            logger.error(f"Failed to send welcome email: {e}")
+        
         return {
             "success": True,
-            "message": "Registration successful",
+            "message": "Registration successful! Welcome to our platform. A welcome email has been sent to your inbox.",
             "token": token,
             "user_id": str(existing_user.id),
             "data": {
@@ -289,10 +257,10 @@ def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, Any]:
         db.rollback()
         return {
             "success": False,
-            "message": "Internal server error"
+            "message": "An error occurred during registration. Please try again later or contact support."
         }
 
-def forgot_password(forgot_data: ForgotPasswordRequest, db: Session) -> Dict[str, Any]:
+async def forgot_password(forgot_data: ForgotPasswordRequest, db: Session) -> Dict[str, Any]:
     """Send password reset email"""
     try:
         # Find user by email
@@ -301,7 +269,14 @@ def forgot_password(forgot_data: ForgotPasswordRequest, db: Session) -> Dict[str
         if not user:
             return {
                 "success": False,
-                "message": "User not found"
+                "message": "No account found with this email address. Please check your email or contact support."
+            }
+        
+        # Check if user is active
+        if user.registration_status != 'active':
+            return {
+                "success": False,
+                "message": "Account is not active. Please contact administrator to activate your account."
             }
         
         # Generate reset token
@@ -313,27 +288,27 @@ def forgot_password(forgot_data: ForgotPasswordRequest, db: Session) -> Dict[str
             "email": user.email,
             "expires_at": datetime.utcnow() + timedelta(hours=1)
         }
-        
+
         # Send reset email
-        if send_reset_email(user.email, reset_token):
+        if await send_reset_email(user.email, reset_token, user.name):
             return {
                 "success": True,
-                "message": "Password reset email sent successfully"
+                "message": "Password reset email sent successfully. Please check your email inbox and follow the instructions to reset your password."
             }
         else:
             return {
                 "success": False,
-                "message": "Failed to send reset email"
+                "message": "Failed to send password reset email. Please try again later or contact support."
             }
         
     except Exception as e:
         logger.error(f"Forgot password error: {e}")
         return {
             "success": False,
-            "message": "Internal server error"
+            "message": "An error occurred while processing your request. Please try again later."
         }
 
-def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, Any]:
+async def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, Any]:
     """Reset password using token"""
     try:
         # Check if token exists and is valid
@@ -342,7 +317,7 @@ def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, A
         if not token_data:
             return {
                 "success": False,
-                "message": "Invalid or expired reset token"
+                "message": "Invalid or expired reset token. Please request a new password reset."
             }
         
         # Check if token has expired
@@ -350,14 +325,14 @@ def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, A
             del reset_tokens[reset_data.reset_token]
             return {
                 "success": False,
-                "message": "Reset token has expired"
+                "message": "Reset token has expired. Please request a new password reset."
             }
         
         # Verify email matches
         if token_data["email"] != reset_data.email:
             return {
                 "success": False,
-                "message": "Invalid reset token"
+                "message": "Invalid reset token. Please check your email and try again."
             }
         
         # Find user
@@ -366,7 +341,7 @@ def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, A
         if not user:
             return {
                 "success": False,
-                "message": "User not found"
+                "message": "User account not found. Please contact support."
             }
         
         # Hash new password
@@ -381,9 +356,21 @@ def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, A
         # Remove used token
         del reset_tokens[reset_data.reset_token]
         
+        # Send confirmation email
+        try:
+            await BrevoEmailService.send_notification_email(
+                email=user.email,
+                subject="Password Reset Successful",
+                message="Your password has been successfully reset. If you did not perform this action, please contact support immediately.",
+                user_name=user.name
+            )
+        except Exception as e:
+            logger.error(f"Failed to send password reset confirmation email: {e}")
+            # Don't fail the password reset if email fails
+        
         return {
             "success": True,
-            "message": "Password reset successful"
+            "message": "Password reset successful. You can now log in with your new password."
         }
         
     except Exception as e:
@@ -391,7 +378,7 @@ def reset_password(reset_data: ResetPasswordRequest, db: Session) -> Dict[str, A
         db.rollback()
         return {
             "success": False,
-            "message": "Internal server error"
+            "message": "An error occurred while resetting your password. Please try again later."
         }
 
 def get_user_profile(user_id: str, db: Session) -> Optional[Dict[str, Any]]:
@@ -422,3 +409,4 @@ def get_user_profile(user_id: str, db: Session) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Get user profile error: {e}")
         return None
+
