@@ -9,7 +9,10 @@ from services.users_service import (
     get_users_by_registration_status as db_get_users_by_registration_status,
     get_user_by_ic_number as db_get_user_by_ic_number,
     get_users_with_school_id as db_get_users_with_school_id,
-    get_user_statistics as db_get_user_statistics
+    get_user_statistics as db_get_user_statistics,
+    add_favorite_book as db_add_favorite_book,
+    remove_favorite_book as db_remove_favorite_book,
+    get_favorite_books as db_get_favorite_books
 )
 from sqlalchemy.orm import Session
 import json
@@ -290,5 +293,65 @@ def get_user_statistics(user_id: str, db: Session):
         "success": True,
         "data": result,
         "message": "User statistics fetched successfully",
+        "error": None
+    }
+
+
+def add_favorite_book(user_id: str, book_id: str, db: Session):
+    """Add a book to user's favorites"""
+    result = db_add_favorite_book(user_id, book_id, db)
+    
+    if not result["success"]:
+        return {
+            "success": False,
+            "data": result["data"],
+            "message": "Failed to add book to favorites",
+            "error": "ADD_FAVORITE_FAILED"
+        }
+    
+    return {
+        "success": True,
+        "data": result["data"],
+        "message": "Book added to favorites successfully",
+        "error": None
+    }
+
+
+def remove_favorite_book(user_id: str, book_id: str, db: Session):
+    """Remove a book from user's favorites"""
+    result = db_remove_favorite_book(user_id, book_id, db)
+    
+    if not result["success"]:
+        return {
+            "success": False,
+            "data": result["data"],
+            "message": "Failed to remove book from favorites",
+            "error": "REMOVE_FAVORITE_FAILED"
+        }
+    
+    return {
+        "success": True,
+        "data": result["data"],
+        "message": "Book removed from favorites successfully",
+        "error": None
+    }
+
+
+def get_favorite_books(user_id: str, db: Session):
+    """Get user's favorite book IDs"""
+    result = db_get_favorite_books(user_id, db)
+    
+    if not result["success"]:
+        return {
+            "success": False,
+            "data": result["data"],
+            "message": "Failed to retrieve favorite books",
+            "error": "GET_FAVORITES_FAILED"
+        }
+    
+    return {
+        "success": True,
+        "data": result["data"],
+        "message": "Favorite books retrieved successfully",
         "error": None
     } 

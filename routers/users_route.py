@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Path, Body, Query, Depends
+from fastapi import APIRouter, Path, Body, Query, Depends, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from dependencies import get_db_session
@@ -13,7 +13,10 @@ from controllers.users_controller import (
     get_users_by_registration_status,
     get_user_by_ic_number,
     get_users_with_school_id,
-    get_user_statistics
+    get_user_statistics,
+    add_favorite_book,
+    remove_favorite_book,
+    get_favorite_books
 )
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -123,4 +126,68 @@ def route_get_user_statistics(
     - Read books list (full book objects with all details)
     - Last book read timestamp
     """
-    return get_user_statistics(user_id, db) 
+    return get_user_statistics(user_id, db)
+
+@router.post("/add-favorite", summary="Add book to favorites")
+async def route_add_favorite(
+    request: Request,
+    db: Session = Depends(get_db_session)
+):
+    """Add a book to user's favorites"""
+    try:
+        body = await request.json()
+        user_id = body.get("user_id")
+        book_id = body.get("book_id")
+        
+        if not user_id or not book_id:
+            return {
+                "success": False,
+                "data": "user_id and book_id are required",
+                "message": "Missing required parameters",
+                "error": "MISSING_PARAMETERS"
+            }
+        
+        return add_favorite_book(user_id, book_id, db)
+    except Exception as e:
+        return {
+            "success": False,
+            "data": str(e),
+            "message": "Error processing request",
+            "error": "REQUEST_ERROR"
+        }
+
+@router.post("/remove-favorite", summary="Remove book from favorites")
+async def route_remove_favorite(
+    request: Request,
+    db: Session = Depends(get_db_session)
+):
+    """Remove a book from user's favorites"""
+    try:
+        body = await request.json()
+        user_id = body.get("user_id")
+        book_id = body.get("book_id")
+        
+        if not user_id or not book_id:
+            return {
+                "success": False,
+                "data": "user_id and book_id are required",
+                "message": "Missing required parameters",
+                "error": "MISSING_PARAMETERS"
+            }
+        
+        return remove_favorite_book(user_id, book_id, db)
+    except Exception as e:
+        return {
+            "success": False,
+            "data": str(e),
+            "message": "Error processing request",
+            "error": "REQUEST_ERROR"
+        }
+
+@router.get("/favorites/{user_id}", summary="Get user's favorite books")
+def route_get_favorites(
+    user_id: str = Path(..., description="User Id number"),
+    db: Session = Depends(get_db_session)
+):
+    """Get user's favorite book IDs"""
+    return get_favorite_books(user_id, db) 

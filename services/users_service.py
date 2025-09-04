@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
-from database.models import User, School, ReadingHistory, Books
+from database.models import User, School, ReadingHistory, Books, FavoriteBooks
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -527,4 +527,83 @@ def get_user_statistics(user_id: str, db: Session):
         }
     except Exception as e:
         db.rollback()
-        return None 
+        return None
+
+
+def add_favorite_book(user_id: str, book_id: str, db: Session):
+    """Add a book to user's favorites"""
+    try:
+        # Check if the favorite already exists
+        existing_favorite = db.query(FavoriteBooks).filter(
+            FavoriteBooks.user_id == user_id,
+            FavoriteBooks.book_id == book_id
+        ).first()
+        
+        if existing_favorite:
+            return {"success": False, "data": "Book is already in favorites"}
+        
+        # Create new favorite entry
+        new_favorite = FavoriteBooks(
+            user_id=user_id,
+            book_id=book_id
+        )
+        
+        # Add to database
+        db.add(new_favorite)
+        db.commit()
+        
+        return {"success": True, "data": "Book added to favorites"}
+        
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "data": str(e)}
+
+
+def remove_favorite_book(user_id: str, book_id: str, db: Session):
+    """Remove a book from user's favorites"""
+    try:
+        # Find user by IC number
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"success": False, "data": "User not found"}
+        
+        # Find and delete the favorite entry
+        favorite = db.query(FavoriteBooks).filter(
+            FavoriteBooks.user_id == user_id,
+            FavoriteBooks.book_id == book_id
+        ).first()
+        
+        if not favorite:
+            return {"success": False, "data": "Book not found in favorites"}
+            
+        # Delete the favorite entry
+        db.delete(favorite)
+        db.commit()
+        
+        return {"success": True, "data": "Book removed from favorites"}
+    
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "data": str(e)}
+
+
+def get_favorite_books(user_id: str, db: Session):
+    """Get user's favorite book IDs"""
+    try:
+        
+        # Get favorite book IDs
+        favorites = db.query(Books.id).filter(
+            FavoriteBooks.user_id ==user_id
+        ).join(
+            FavoriteBooks,
+            Books.id == FavoriteBooks.book_id
+        ).all()
+        
+        # Convert list of tuples to list of IDs
+        favorite_ids = [book_id[0] for book_id in favorites]
+        
+        return {"success": True, "data": favorite_ids}
+        
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "data": "Error retrieving favorites"} 
