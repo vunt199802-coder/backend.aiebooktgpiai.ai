@@ -62,6 +62,7 @@ def get_response(messages: List[any], defaultInput: str, streaming: bool):
         </context>
     """
 
+    print("SYSTEM_TEMPLATE", SYSTEM_TEMPLATE)
 
     vectorstore = PineconeVectorStore(pinecone_api_key=PINECONE_KEY, index_name=PINECONE_INDEX, embedding=embeddings,
                                       namespace=pinecone_namespace)
@@ -89,7 +90,7 @@ def get_response(messages: List[any], defaultInput: str, streaming: bool):
             ),
         ]
     )
-    
+
     query_transforming_retriever_chain = RunnableBranch(
         (
             lambda x: len(x.get("messages", [])) == 1,
@@ -105,7 +106,7 @@ def get_response(messages: List[any], defaultInput: str, streaming: bool):
     ).assign(
         answer=document_chain,
     )
-    
+
     history = []
     for item in messages:
         if item['type'] == "user":
@@ -115,11 +116,13 @@ def get_response(messages: List[any], defaultInput: str, streaming: bool):
 
     if streaming:
         all_content = ""
+        
         stream = conversational_retrieval_chain.stream(
             {
                 "messages": history,
             }
         )
+
         for chunk in stream:
             for key in chunk:
                 if key == "answer":
@@ -133,6 +136,8 @@ def get_response(messages: List[any], defaultInput: str, streaming: bool):
                 "messages": history,
             }
         )
+
+        print("stream", stream)
 
         return stream
     
@@ -157,6 +162,8 @@ def get_response_chat(messages: List[any], streaming: bool, SYSTEM_PROMPT: str="
         </context>
     """
 
+    print("SYSTEM_TEMPLATE", SYSTEM_TEMPLATE)
+
     vectorstore = PineconeVectorStore(pinecone_api_key=PINECONE_KEY, index_name=PINECONE_INDEX, embedding=embeddings,
                                       namespace=pinecone_namespace)
     retriever = vectorstore.as_retriever()
@@ -183,6 +190,8 @@ def get_response_chat(messages: List[any], streaming: bool, SYSTEM_PROMPT: str="
             ),
         ]
     )
+
+    print("query_transform_prompt", query_transform_prompt)
 
     query_transforming_retriever_chain = RunnableBranch(
         (

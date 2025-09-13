@@ -23,8 +23,6 @@ async def add_reading_progress(request: Request, res: Response = Response(), db:
         duration = body.get("duration")
         score = body.get("score")
 
-        print("==============", user_ic, book_id, percentage, started_time, duration, score)
-
         user = db.query(User).filter(User.ic_number == user_ic).first()
 
         if not all([user_ic, book_id, percentage, started_time]):

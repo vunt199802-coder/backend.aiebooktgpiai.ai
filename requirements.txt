@@ -101,7 +101,6 @@ yarl==1.9.4
 EbookLib==0.18
 moviepy>=1.0.3
 openai-whisper>=20230314
-boto3==1.38.3
 PyMuPDF==1.25.5
 pinecone==3.2.2
 elevenlabs==1.57.0
