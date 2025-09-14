@@ -12,7 +12,7 @@ from controllers.admins_controller import (
 
 router = APIRouter(prefix="/api/admins", tags=["admins"])
 
-@router.get("/", summary="Get all admins")
+@router.get("", summary="Get all admins")
 def route_get_all_admins():
     return get_all_admins()
 
@@ -28,7 +28,7 @@ def route_get_admin_by_email(email: str = Path(...)):
 def route_get_all_schools():
     return get_all_schools()
 
-@router.post("/", summary="Add a new admin")
+@router.post("", summary="Add a new admin")
 def route_add_admin(admin_data: dict = Body(...)):
     return add_admin(admin_data)
 
@@ -40,6 +40,6 @@ def route_update_admin(admin_id: str = Path(...), admin_data: dict = Body(...)):
 def route_delete_admin(admin_id: str = Path(...)):
     return delete_admin(admin_id)
 
-@router.post("/count-signin", summary="Add a new admin")
+@router.post("/count-signin", summary="Count admin signin")
 def route_count_signin(admin_data: dict = Body(...)):
     return count_signin(admin_data)
