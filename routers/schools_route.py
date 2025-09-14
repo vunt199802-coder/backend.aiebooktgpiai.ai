@@ -17,7 +17,7 @@ from typing import Optional, List
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
 
-@router.get("/", summary="Get all schools")
+@router.get("", summary="Get all schools")
 def route_get_all_schools(
     page: int = Query(1, ge=1, description="Page number"),
     perPage: int = Query(20, ge=1, le=100, description="Number of items per page"),
@@ -60,7 +60,7 @@ def route_get_schools_by_status(
     """Get schools filtered by status"""
     return get_schools_by_status(status, db, page, limit)
 
-@router.post("/", summary="Add a new school")
+@router.post("", summary="Add a new school")
 def route_add_school(
     school_data: dict = Body(..., description="School data (name, state, city)"),
     db: Session = Depends(get_db_session)
