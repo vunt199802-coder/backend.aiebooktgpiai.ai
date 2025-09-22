@@ -195,6 +195,11 @@ async def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, 
     try:
         # Check if user with ic_number already exists
         existing_user = db.query(User).filter(User.ic_number == signup_data.ic_number).first()
+
+        print("existing_user", existing_user.name)
+        print("existing_user", existing_user.email)
+        print("existing_user", existing_user.password_hash)
+        print("existing_user", existing_user.registration_status)
         
         if not existing_user:
             return {
@@ -203,7 +208,8 @@ async def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, 
             }
         
         # Check if user already has an account
-        if existing_user.email or existing_user.password_hash:
+        if existing_user.email != None or existing_user.password_hash != None:
+            print("existing_user.email != None or existing_user.password_hash != None", existing_user.email != None, existing_user.password_hash != None)
             return {
                 "success": False,
                 "message": "An account with this IC number already exists. Please try logging in instead."
@@ -248,7 +254,8 @@ async def user_signup(signup_data: UserSignupRequest, db: Session) -> Dict[str, 
                 "email": existing_user.email,
                 "ic_number": existing_user.ic_number,
                 "name": existing_user.name,
-                "registration_status": existing_user.registration_status
+                "registration_status": existing_user.registration_status,
+                "school_id": str(existing_user.school_id) if existing_user.school_id else None,
             }
         }
         
