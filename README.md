@@ -12,7 +12,7 @@ This project is an AI-powered backend service designed to handle various analyti
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Ifzat/ai_ebook_backend
+   git clone https://github.com/vunt199802-coder/ai_ebook_backend
    cd ai_ebook_backend
    ```
 
